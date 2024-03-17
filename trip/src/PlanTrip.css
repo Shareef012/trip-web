@@ -1,12 +1,26 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,100..900;1,100..900&display=swap');
 
-.main {
-    margin-top: 10px; /* Adjust margin-top as needed */
-    margin-left: 100px; /* Keep the sidebar width */
-    margin-right: 20px; /* Add margin to the right side */
+.mai {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Center the form horizontally */
+    margin-top: 80px;
+  }
+  
+  .resultTabl {
+    margin-top: 20px;
+    margin-left: 50px;
+    text-align: left;
+    padding-top: 10px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-}
+    padding-right: 10px;
+    border-radius: 5px;
+  }
+  
+  .query {
+    margin-bottom: 20px; /* Add margin at the bottom to separate from result tables */
+  }
+  
 *{
     margin-top: 0;
     padding: 0;
@@ -34,15 +48,6 @@
 
 
 
-.resultTable{
-    margin-top: 20px;
-    margin-left: 100px;
-    text-align: left;
-    padding-top: 10px;
-    box-shadow: 0 0 10px rgba(0,0, 0, 0.1);
-    padding-right: 10px;
-    border-radius: 5px;
-}
 
 .query .print{
     text-align: left;
@@ -56,7 +61,7 @@ td,th{
     padding-bottom: 8px;
 
 }
-.btn{
+.bt{
     display: flex;
     justify-content: center;
     width: 70px;
@@ -71,7 +76,7 @@ td,th{
     align-items: center;
 }
 
-.customSelect{
+.customSelec{
     width: 200px;
     height: 30px !important;
     font-size: 15px;

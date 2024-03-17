@@ -11,11 +11,39 @@ function Register() {
   const [password, setPassword] = useState('');
   const [mobile, setMobile] = useState('');
 
+  const handleSubmit = async (e) =>{
+    e.preventDefault();
+    try{
+      const response = await fetch('/register',{
+        method : 'post',
+        headers : {
+            'Content-Type' : 'application/json'
+        },
+        body : JSON.stringify({
+            firstName:firstName,
+            lastName:lastName,
+            email:email,
+            password:password,
+            mobile:mobile
+        })
+    })
+
+    if(response.ok){
+        console.log("Registration Succesfull")
+    }
+    else{
+        console.log("Not succesfull....");
+    }
+    }catch(err){
+      console.log("Registration is unsuccessful......");
+    }
+  }
+
 
   return (
     <div className='container'>
       <h2 className=''>Register</h2>
-      <form action="" method="">
+      <form action="http://localhost:3001/register" method="post">
         <table className='resultTable'>
           <tbody>
             <tr>
@@ -25,7 +53,7 @@ function Register() {
               <td>
                 <input
                   type="text"
-                  id="firstName"
+                  name="firstName"
                   value={firstName}
                   className='customSelect'
                   onChange={(e) => setFirstName(e.target.value)}
@@ -39,7 +67,7 @@ function Register() {
               <td>
                 <input
                   type="text"
-                  id="lastName"
+                  name="lastName"
                   value={lastName}
                   className='customSelect'
                   onChange={(e) => setLastName(e.target.value)}
@@ -53,7 +81,7 @@ function Register() {
               <td>
                 <input
                   type="email"
-                  id="email"
+                  name="email"
                   value={email}
                   className='customSelect'
                   onChange={(e) => setEmail(e.target.value)}
@@ -67,7 +95,7 @@ function Register() {
               <td>
                 <input
                   type="password"
-                  id="password"
+                  name="password"
                   value={password}
                   className='customSelect'
                   onChange={(e) => setPassword(e.target.value)}
@@ -81,7 +109,7 @@ function Register() {
               <td>
                 <input
                   type="text"
-                  id="mobile"
+                  name="mobile"
                   value={mobile}
                   className='customSelect'
                   onChange={(e) => setMobile(e.target.value)}

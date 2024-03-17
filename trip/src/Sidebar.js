@@ -1,30 +1,18 @@
-// Sidebar.js
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import './Sidebar.css';
 
-const Sidebar = () => {
+const Sidebar = ({ handleLogout }) => {
   return (
     <div className="SideBar">
       <ul>
-        <li>
-          <Link to="/">Home</Link>
-        </li>
-        <li>
-          <Link to="/plantrip">Plan A Trip</Link>
-        </li>
-        <li>
-          <Link to="/canceltrip">Cancel A Trip</Link>
-        </li>
-        <li>
-          <Link to="/about">About us</Link>
-        </li>
-        <li>
-          <Link to="/profile">Profile</Link>
-        </li>
-        <li>
-          <Link to="/Signin">Signin</Link>
-        </li>
+        <li><Link to="/home">Home</Link></li>
+        <li><Link to="/plantrip">Plan Trip</Link></li>
+        <li><Link to="/canceltrip">Cancel Trip</Link></li>
+        <li><Link to="/about">About</Link></li>
+        <li><Link to="/profile">Profile</Link></li>
+        <li><button onClick={handleLogout}>Logout</button></li>
       </ul>
     </div>
   );

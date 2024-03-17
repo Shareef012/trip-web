@@ -6,14 +6,37 @@ const unqid = require("unqid");
 const sha256 = require("sha256");
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
+const cors = require("cors");
+const session = require('express-session');
+const crypto = require('crypto');
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
 
 
+const corsOptions = {
+  origin: 'http://localhost:3000',
+  methods: ['GET', 'POST'],
+  credentials: true, // Allow credentials (cookies) to be sent cross-origin
+};
+
+
+app.use(cors(corsOptions));
+
+
+
+const secretKey = crypto.randomBytes(32).toString('hex');
+console.log(secretKey);
+app.use(session({
+  secret: secretKey,
+  resave: false,
+  saveUninitialized: false
+}));
 // Database connection
 const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
   user: "root",
-  password: "Shareef@53",
+  password: "",
   database: "shareef"
 });
 
@@ -21,7 +44,7 @@ const connection = mysql.createConnection({
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
+app.use(cors());
 
 
 connection.connect((err) => {
@@ -42,16 +65,16 @@ app.get("/", (req, res) => {
   res.send("PhonePe Working.....");
 });
 
-app.post("/signin", async (req, res) => {
+app.post("/Signin", async (req, res) => {
   try {
     const { username, password } = req.body;
     console.log(username+" "+password +"  "+req.body )
     const [rows,fields] = await connection.promise().query(`SELECT * FROM users WHERE email = '${username}'`);
    // console.log(result[0].email +"   "+result[0][1].password);
-    
+    console.log(rows);
     if(rows.length>0 && rows[0].password===password){
      // res.status(200).json({ message: "Signin successful...." });
-      res.redirect("http://localhost:3000/")
+      res.redirect("http://localhost:3000/home")
     }
     else{
       res.send("check email and password....")
@@ -66,18 +89,43 @@ app.post("/signin", async (req, res) => {
 
 
 
+app.post("/register", async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, mobile } = req.body;
+    console.log(req.body+"   112345  "+firstName);
+    const [rows, fields] = await connection.promise().query(
+      `INSERT INTO users (firstname, lastname, email, password, mobile) VALUES (?, ?, ?, ?, ?)`,
+      [firstName, lastName, email, password, mobile]
+    );
+
+    // Check if the query executed successfully
+    if (rows.affectedRows > 0) {
+      console.log("Registration successful");
+      res.redirect("http://localhost:3000/Signin")
+    } else {
+      console.log("Failed to register");
+      res.status(500).json({ message: "Failed to register" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Failed to register" });
+  }
+});
+
+
 const merchantTransactionId = unqid();
 console.log(merchantTransactionId);
 console.log(merchantTransactionId);
 app.get("/pay", (req, res) => {
   const endpoint = "/pg/v1/pay";
-    console.log(req.query.from);
+  const {flightname,from,to,travelDate,returnDate,numTickets,cost,tripType} = req.query
+  console.log(req.body+" 12345"+flightname);
   const payload = {
     merchantId: merchent_id,
     merchantTransactionId: merchantTransactionId,
     merchantUserId: 123,
-    amount: 30000,
-    redirectUrl: `http://localhost:3001/redirect-url/${merchantTransactionId}`,
+    amount: parseInt(cost)*100,
+    redirectUrl: `http://localhost:3001/redirect-url/${merchantTransactionId}?flightname=${flightname}&from=${from}&to=${to}&travelDate=${travelDate}&returnDate=${returnDate}&numTickets=${numTickets}&cost=${cost}&tripType=${tripType}`,
     redirectMode: "REDIRECT",
     mobileNumber: "9999999999",
     paymentInstrument: {
@@ -114,49 +162,57 @@ app.get("/pay", (req, res) => {
       console.error(error);
     });
 });
-
-app.get("/redirect-url/:merchantTransactionId", (req, res) => {
+app.get("/redirect-url/:merchantTransactionId", async (req, res) => {
   const { merchantTransactionId } = req.params;
-  const xverify = sha256(`/pg/v1/status/${merchent_id}/${merchantTransactionId}`+salt_key)+"###"+salt_index;
-  console.log(merchantTransactionId);
+  const { flightname, from, to, travelDate, returnDate, numTickets, cost, tripType } = req.query;
+
+  // Split the 'from' string into destination and number of tickets
+  const [fromDestination, fromNumTickets] = from.split(',');
+  const xverify = sha256(`/pg/v1/status/${merchent_id}/${merchantTransactionId}` + salt_key) + "###" + salt_index;
+  console.log(merchantTransactionId + " 12345 " + travelDate + " 123 " + fromNumTickets+"   "+from);
   if (merchantTransactionId) {
-    const options = {
-      method: "get",
-      url: `${phonepe_host}/pg/v1/status/${merchent_id}/${merchantTransactionId}`,
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        "X-MERCHANT-ID" : merchantTransactionId,
-        "X-VERIFY" : xverify
-      },
-    };
-    axios
-      .request(options)
-      .then(function (response) {
-        console.log(response.data);
-       // res.send(response.data)
-        if(response.data.code==='PAYMENT_SUCCESS'){
-            res.redirect("http://localhost:3000/plantrip")
-        }else if(response.data.code==="PAYMENT_FAILURE"){
-
+    try {
+      const options = {
+        method: "get",
+        url: `${phonepe_host}/pg/v1/status/${merchent_id}/${merchantTransactionId}`,
+        headers: {
+          accept: "application/json",
+          "Content-Type": "application/json",
+          "X-MERCHANT-ID": merchantTransactionId,
+          "X-VERIFY": xverify
+        },
+      };
+      const response = await axios.request(options);
+      console.log(response.data);
+      const userEmail = req.cookies.email;
+      console.log(userEmail);
+      if (response.data.code === 'PAYMENT_SUCCESS') {
+        const [result] = await connection.promise().query(
+          `update users set flightname=?,from_location=?,to_location=?,traveldate=?,returndate=?,numtickets=?,cost=?,triptype=? where email=?`,
+          [flightname, fromDestination, to, travelDate, returnDate, numTickets, cost, tripType, userEmail]
+        );
+        if (result.affectedRows > 0) {
+          req.session.isLoggedIn = true;
+          res.redirect("http://localhost:3000/home")
+        } else {
+          res.status(500).json({ message: 'Failed to update email' });
         }
-        else{
-
-        }
-      })
-      .catch(function (error) {
-        console.error(error);
-      });
-    //res.send(merchantTransactionId);
+      } else if (response.data.code === "PAYMENT_FAILURE") {
+        // Handle payment failure
+      } else {
+        // Handle other cases
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   } else {
-    res.send("errrorrr.....");
+    res.send("Error: Merchant transaction ID is missing.");
   }
 });
 
 
-app.get("/pay",(req,res)=>{
-    console.log(req.query);
-})
+
 
 app.listen(port, (err) => {
   console.log("the server is started listening....");
